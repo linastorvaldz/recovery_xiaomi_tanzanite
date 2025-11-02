@@ -1,53 +1,22 @@
 import /init.mitee.rc
 
 on init
-    # Create a more standard /dev/block layout for our scripts
-    symlink /dev/block/platform/bootdevice /dev/block/bootdevice
-    mkdir /persist 0700 root root
-    mount ext4 /dev/block/by-name/persist /persist
-    mkdir /persist/OFRP
     export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/hw
     setprop sys.usb.configfs 1
     setprop sys.usb.controller "musb-hdrc"
     setprop sys.usb.ffs.aio_compat 1
     setprop crypto.ready 1
-
-# For Vibrator
-    write /sys/class/leds/vibrator/trigger "transient"
-    chown system system /sys/class/leds/vibrator/trigger
-    chown system system /sys/class/leds/vibrator/activate
-    chown system system /sys/class/leds/vibrator/brightness
-    chown system system /sys/class/leds/vibrator/duration
-    chown system system /sys/class/leds/vibrator/state
-
-# Flashlight
-    chown system system /sys/class/leds/flashlight/trigger
-    chown system system /sys/class/leds/flashlight/brightness
-    chown system system /sys/class/leds/flashlight/max_brightness
-
-    chown system system /sys/class/leds/torch-light0/trigger
-    chown system system /sys/class/leds/torch-light0/brightness
-    chown system system /sys/class/leds/torch-light0/max_brightness
     
 on fs
     install_keyring
+    mkdir /mnt/vendor/persist 0755 system system
+    mkdir /persist 0755 system system
+    mount_all /system/etc/persist.fstab --early
+    restorecon_recursive /mnt/vendor/persist
+    mkdir /mnt/vendor/persist/data 0755 system system
+    mount none /mnt/vendor/persist /persist bind
 
-on post-fs
-   start boot-hal-1-2
-    
-on boot
-    chown system system /dev/xiaomi-touch
-    chmod 0664 /dev/xiaomi-touch
-    chown system system /sys/class/touch/tp_dev/fod_status
-    chmod 0664 /sys/class/touch/tp_dev/fod_status
-
-service touchfeature-hal-1-0 /vendor/bin/hw/vendor.xiaomi.hardware.touchfeature@1.0-service
-    class main
-    user root
-    group root
-    onrestart restart touchfeature-hal-1-0
-    seclabel u:r:recovery:s0
-
+# Services
 service keymint-mitee /vendor/bin/hw/android.hardware.security.keymint@1.0-service.mitee
     interface android.hardware.keymaster@4.0::IKeymasterDevice default
     interface android.hardware.keymaster@4.1::IKeymasterDevice default
@@ -64,21 +33,19 @@ service gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
     disabled
     seclabel u:r:recovery:s0
 
-service vendor.vibrator-default /vendor/bin/hw/android.hardware.vibrator-service.mediatek
-    class hal
-    user root
-    group root system
-    seclabel u:r:recovery:s0
-
-service mountfix /sbin/sh /system/bin/mount.sh
+service load-touch-module /sbin/sh /system/bin/load-touch-module.sh
     user root
     group root
     oneshot
     disabled
     seclabel u:r:recovery:s0
 
-on property:sys.usb.ffs.ready=1
-    start mountfix
+service modules_mount /system/bin/modules_mount.sh
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
 
 on property:crypto.ready=1
     start keymint-mitee
@@ -112,16 +79,9 @@ on property:crypto.ready=0
     stop miteelog
 
 on boot
+    start boot-hal-1-2
     start health-hal-2-1
-    start vendor.vibrator-default
-    setprop sys.usb.config adb
-
-service modules_mount /system/bin/modules_mount.sh
-    user root
-    group root
-    disabled
-    oneshot
-    seclabel u:r:recovery:s0
 
 on property:twrp.decrypt.done=true
     start modules_mount
+    start load-touch-module
