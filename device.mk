@@ -11,6 +11,9 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 # Installs gsi keys into ramdisk, to boot a GSI with verified boot.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_keys.mk)
 
+# some OrangeFox-specific settings
+$(call inherit-product, $(LOCAL_PATH)/fox_tanzanite.mk)
+
 # Dynamic
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
