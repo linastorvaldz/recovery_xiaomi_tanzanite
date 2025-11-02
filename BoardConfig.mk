@@ -230,6 +230,7 @@ TWRP_INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
 
 # Haptics
+TW_NO_HAPTICS := true
 #TW_SUPPORT_INPUT_AIDL_HAPTICS := true
 
 # Modules
