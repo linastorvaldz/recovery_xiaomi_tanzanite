@@ -81,7 +81,7 @@ on property:crypto.ready=0
 on boot
     start boot-hal-1-2
     start health-hal-2-1
+    start load-touch-module
 
 on property:twrp.decrypt.done=true
     start modules_mount
-    start load-touch-module
